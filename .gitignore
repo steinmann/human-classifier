@@ -1,0 +1,3 @@
+venv/
+.idea/
+human_classifier.model
