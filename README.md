@@ -1,6 +1,7 @@
 ### Design
 * a simple command line interfacte to feed data, return model accuracy and save the model
-* uses default xgboost binary classifier
+* optional tuning mode performing randomized search
+* uses tuned xgboost binary classifier
 * excludes heroes that lack info on race and superpowers
 * uses all properties except name as features
 * categorical attributes are one hot encoded
