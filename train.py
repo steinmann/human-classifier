@@ -101,7 +101,7 @@ def main():
         search = RandomizedSearchCV(model,
                                     param_distributions=params,
                                     random_state=42,
-                                    n_iter=5,
+                                    n_iter=500,
                                     cv=5,
                                     n_jobs=8,
                                     return_train_score=True)
