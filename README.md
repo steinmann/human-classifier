@@ -2,7 +2,8 @@
 * a simple command line interfacte to feed data, return model accuracy and save the model
 * uses default xgboost binary classifier
 * excludes heroes that lack info on race and superpowers
-* only uses superpowers to classify humans
+* uses all properties except name as features
+* categorical attributes are one hot encoded
 * uses five fold cross validation to determine the model accuracy 
 
 ### Usage

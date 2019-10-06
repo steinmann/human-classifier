@@ -3,7 +3,9 @@ import argparse
 from statistics import mean
 
 import pandas as pd
+import numpy as np
 import xgboost as xgb
+
 from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score
 
@@ -52,21 +54,34 @@ def main():
     # remove heroes with undefined race
     hero_race = hero_data[hero_data['Race'] != '-']
 
-    # use only superpowers for learning
-    powers = hero_race.iloc[:, 11:].to_numpy()
+    # engineer features
+    powers = hero_race.iloc[:, 11:]
 
-    # create labels
-    is_human = (hero_race['Race'] == 'Human').to_numpy()
+    weight = hero_race['Weight'].to_numpy()
+    weight[weight == -99] = np.nan
 
-    # define model
+    height = hero_race['Height'].to_numpy()
+    height[height == -99] = np.nan
+
+    gender = pd.get_dummies(hero_race['Gender'])
+    eye = pd.get_dummies(hero_race['Eye color'])
+    hair = pd.get_dummies(hero_race['Hair color'])
+    publisher = pd.get_dummies(hero_race['Publisher'])
+    skin = pd.get_dummies(hero_race['Skin color'])
+    alignment = pd.get_dummies(hero_race['Alignment'])
+
+
+    # defina data, label and model
+    data = np.column_stack((powers, weight, height, gender, eye, hair, publisher, skin, alignment))
+    label = (hero_race['Race'] == 'Human').to_numpy()
     model = xgb.XGBClassifier(random_state=42)
 
     # get cross validated model accuracy
-    accuracy = cv_accuracy(powers, is_human, model)
+    accuracy = cv_accuracy(data, label, model)
     print(f'Prediction accuracy: {accuracy * 100:.2f}%')
 
     # train on full dataset
-    model.fit(powers, is_human)
+    model.fit(data, label)
 
     # save model
     model.save_model(args.model)
