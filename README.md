@@ -17,3 +17,5 @@ usage: train.py [-h] --info [INFO] --power [POWER] [--model [MODEL]]
 --power [POWER]  csv file containing info on superhero powers
 
 --model [MODEL]  name of the model (optional)
+
+--tune           freshly tune parameters using random search
