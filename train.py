@@ -8,12 +8,10 @@ from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score
 
 
-def get_accuracy(data, labels, model):
+def cv_accuracy(data, labels, model):
     # return mean accuracy from five-fold cross validation
     kf = KFold(n_splits=5)
     kf.get_n_splits(data)
-
-    # five fold cross validation
     accuracy_scores = []
     for train_index, test_index in kf.split(data):
         # split training data and labels
@@ -61,11 +59,11 @@ def main():
     is_human = (hero_race['Race'] == 'Human').to_numpy()
 
     # define model
-    model = xgb.XGBRegressor(objective="binary:logistic", random_state=42)
+    model = xgb.XGBClassifier(random_state=42)
 
     # get cross validated model accuracy
-    accuracy = get_accuracy(powers, is_human, model)
-    print(f'Prediction accuracy is {accuracy * 100:.2f}%')
+    accuracy = cv_accuracy(powers, is_human, model)
+    print(f'Prediction accuracy: {accuracy * 100:.2f}%')
 
     # train on full dataset
     model.fit(powers, is_human)
