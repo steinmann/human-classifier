@@ -59,21 +59,18 @@ def main():
     # engineer features
     powers = hero_race.iloc[:, 11:]
 
-    weight = hero_race['Weight'].to_numpy()
-    weight[weight == -99] = np.nan
+    numerical_features = []
+    for feature in ['Weight', 'Height']:
+        num = hero_race[feature].to_numpy()
+        num[num == -99] = np.nan
+        numerical_features.append(num)
 
-    height = hero_race['Height'].to_numpy()
-    height[height == -99] = np.nan
+    categorical_features = []
+    for feature in ['Gender','Eye color', 'Hair color', 'Publisher', 'Skin color', 'Alignment']:
+        categorical_features.append(pd.get_dummies(hero_race[feature]))
 
-    gender = pd.get_dummies(hero_race['Gender'])
-    eye = pd.get_dummies(hero_race['Eye color'])
-    hair = pd.get_dummies(hero_race['Hair color'])
-    publisher = pd.get_dummies(hero_race['Publisher'])
-    skin = pd.get_dummies(hero_race['Skin color'])
-    alignment = pd.get_dummies(hero_race['Alignment'])
-
-    # defina data, label and model
-    data = np.column_stack((powers, weight, height, gender, eye, hair, publisher, skin, alignment))
+    # define data, label and model
+    data = np.column_stack([powers] + numerical_features + categorical_features)
     label = (hero_race['Race'] == 'Human').to_numpy()
     model = xgb.XGBClassifier(max_depth=2,  # 3
                               min_child_weight=1,  # 1
