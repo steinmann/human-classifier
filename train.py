@@ -6,8 +6,14 @@ import pandas as pd
 import numpy as np
 import xgboost as xgb
 
-from sklearn.model_selection import KFold, RandomizedSearchCV
+import matplotlib.pyplot as plt
+from sklearn.model_selection import KFold
 from sklearn.metrics import accuracy_score
+
+from skopt import gp_minimize
+from skopt.space import Real, Integer
+from skopt.utils import use_named_args
+from skopt.plots import plot_convergence
 
 
 def cv_accuracy(data, labels, model):
@@ -66,47 +72,56 @@ def main():
         numerical_features.append(num)
 
     categorical_features = []
-    for feature in ['Gender','Eye color', 'Hair color', 'Publisher', 'Skin color', 'Alignment']:
+    for feature in ['Gender', 'Eye color', 'Hair color', 'Publisher', 'Skin color', 'Alignment']:
         categorical_features.append(pd.get_dummies(hero_race[feature]))
 
     # define data, label and model
     data = np.column_stack([powers] + numerical_features + categorical_features)
     label = (hero_race['Race'] == 'Human').to_numpy()
-    model = xgb.XGBClassifier(max_depth=2,  # 3
+    model = xgb.XGBClassifier(max_depth=5,  # 3
                               min_child_weight=1,  # 1
-                              gamma=0,  # 0
+                              gamma=2.0890269956665937,  # 0
                               subsample=1,  # 1
                               colsample_bytree=1,  # 1
-                              reg_alpha=0.01,  # 0
-                              learning_rate=0.1,  # 0.1
-                              n_estimators=100,  # 100
+                              reg_alpha=0,  # 0
+                              learning_rate=0.12187163648342948,  # 0.1
+                              n_estimators=50,  # 100
                               random_state=42)
 
     # tune hyperparameters
     if args.tune:
-        params = {
-            'max_depth': range(2, 8),
-            'min_child_weight': range(1, 6),
-            'gamma': [i / 10.0 for i in range(0, 5)],
-            'subsample': [i / 10.0 for i in range(6, 11)],
-            'colsample_bytree': [i / 10.0 for i in range(6, 11)],
-            'reg_alpha': [i / 100.0 for i in range(0, 6)],
-            'n_estimators': range(50, 150),
-            'learning_rate': [0.0001, 0.001, 0.01, 0.1, 0.2, 0.3],
-        }
+        space = [Integer(1, 10, name='max_depth'),
+                 Integer(1, 5, name='min_child_weight'),
+                 Real(0.0, 5, name='gamma'),
+                 Real(0.5, 1, name='subsample'),
+                 Real(0.5, 1, name='colsample_bytree'),
+                 Real(0, 0.05, name='reg_alpha'),
+                 Real(0.0001, 0.3, name='learning_rate'),
+                 Integer(50, 150, name='n_estimators'),
+                 ]
 
-        search = RandomizedSearchCV(model,
-                                    param_distributions=params,
-                                    random_state=42,
-                                    n_iter=500,
-                                    cv=5,
-                                    n_jobs=8,
-                                    return_train_score=True)
+        @use_named_args(space)
+        def objective(**params):
+            model.set_params(**params)
+            return -1 * cv_accuracy(data, label, model)
 
-        search.fit(data, label)
-        for param in search.best_params_:
-            print(f'{param}: {search.best_params_[param]}')
-        model = xgb.XGBClassifier(**search.best_params_)
+        model_gp = gp_minimize(objective, space, n_calls=500, random_state=42)
+        print(model_gp.x)
+        params = ['max_depth',
+                  'min_child_weight',
+                  'gamma',
+                  'subsample',
+                  'colsample_bytree',
+                  'reg_alpha',
+                  'learning_rate',
+                  'n_estimators']
+
+        opt_params = dict(zip(params, model_gp.x))
+        model = xgb.XGBClassifier(**opt_params)
+
+        fig, ax = plt.subplots(figsize=(16, 12))
+        plot_convergence(model_gp, ax=ax)
+        fig.savefig('convergence.png')
 
     # get cross validated model accuracy
     accuracy = cv_accuracy(data, label, model)
