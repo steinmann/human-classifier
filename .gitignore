@@ -1,4 +1,4 @@
 venv/
 .idea/
 human_classifier.model
-convergence.png
+convergence*
