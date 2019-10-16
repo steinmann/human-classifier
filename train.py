@@ -90,6 +90,7 @@ def main():
 
     # tune hyperparameters
     if args.tune:
+        # define parameter space and tuning objective
         space = [Integer(1, 10, name='max_depth'),
                  Integer(1, 5, name='min_child_weight'),
                  Real(0.0, 5, name='gamma'),
@@ -97,28 +98,24 @@ def main():
                  Real(0.5, 1, name='colsample_bytree'),
                  Real(0, 0.05, name='reg_alpha'),
                  Real(0.0001, 0.3, name='learning_rate'),
-                 Integer(50, 150, name='n_estimators'),
-                 ]
+                 Integer(50, 150, name='n_estimators')]
 
         @use_named_args(space)
         def objective(**params):
             model.set_params(**params)
             return -1 * cv_accuracy(data, label, model)
 
-        model_gp = gp_minimize(objective, space, n_calls=500, random_state=42)
-        print(model_gp.x)
-        params = ['max_depth',
-                  'min_child_weight',
-                  'gamma',
-                  'subsample',
-                  'colsample_bytree',
-                  'reg_alpha',
-                  'learning_rate',
-                  'n_estimators']
+        # tune parameters
+        model_gp = gp_minimize(objective, space, n_calls=500, random_state=42, verbose=True)
 
-        opt_params = dict(zip(params, model_gp.x))
+        # create dictionary of optimized parameters
+        param_names = [param.name for param in space]
+        opt_params = dict(zip(param_names, model_gp.x))
+
+        # create model with tuned parameters
         model = xgb.XGBClassifier(**opt_params)
 
+        # plot convergence of optimization
         fig, ax = plt.subplots(figsize=(16, 12))
         plot_convergence(model_gp, ax=ax)
         fig.savefig('convergence.png')
